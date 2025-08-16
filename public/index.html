@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Elon-Style Persona</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    html, body { height: 100%; margin: 0; }
+    body { background: #000; color: #fff; display: flex; justify-content: center; align-items: center; }
+    .glass { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(10px); }
+    @media (max-width: 640px) {
+      .container { width: 95vw; height: 90vh; padding: 4px; }
+      #chat { font-size: 0.8rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="glass rounded-2xl p-6 container w-[min(980px,95vw)] h-[min(640px,92vh)] grid grid-rows-[auto,1fr,auto] gap-4">
+    <!-- top bar -->
+    <header class="flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-full ring-2 ring-white/10 grid place-items-center text-xl">🚀</div>
+        <div>
+          <h1 class="text-lg font-semibold">Elon-Style Persona</h1>
+          <p id="typewriter" class="text-xs text-white/70"></p>
+        </div>
+      </div>
+      <div class="text-xs text-white/60">Model: gpt-4o-mini</div>
+    </header>
+
+    <!-- chat area -->
+    <main id="chat" class="glass rounded-xl p-4 overflow-auto text-sm space-y-3">
+      <div class="text-white/80"><span class="font-medium">System:</span> I’m an Elon-style AI persona. Ask about rockets, EVs, AI, manufacturing, Mars.</div>
+    </main>
+
+    <!-- input -->
+    <form id="bar" class="flex gap-3">
+      <input id="q" class="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 outline-none focus:border-white/20" placeholder="Ask something bold…" autocomplete="off" />
+      <button class="px-4 py-3 rounded-xl bg-white text-black font-medium">Send</button>
+    </form>
+  </div>
+
+  <script>
+    // typewriter
+    const words = ["Tesla ⚡", "SpaceX 🚀", "Neuralink 🧠", "Starship 🚀", "First-principles 🧩", "Manufacturing > Prototypes 🏭", "Mars 🌌", "AI + Safety 🤖"];
+    const tw = document.getElementById('typewriter'); let i=0, j=0, erase=false;
+    (function loop(){
+      const w = words[i];
+      tw.textContent = w.slice(0,j);
+      if(!erase&&j<w.length) j++;
+      else if(erase&&j>0) j--;
+      else {erase=!erase;if(!erase)i=(i+1)%words.length;}
+      setTimeout(loop, erase?35:55);
+    })();
+
+    const chat = document.getElementById('chat');
+    const form = document.getElementById('bar');
+    const q = document.getElementById('q');
+
+    function bubble(who,text){
+      const row = document.createElement('div');
+      row.className='flex '+(who==='you'?'justify-end':'justify-start');
+      const b = document.createElement('div');
+      b.className='max-w-[80%] rounded-xl px-4 py-3 '+(who==='you'?'bg-white text-black':'bg-white/5 border border-white/10');
+      b.textContent=text;
+      row.appendChild(b);
+      chat.appendChild(row);
+      chat.scrollTop=chat.scrollHeight;
+    }
+
+    form.onsubmit = async (e)=>{
+      e.preventDefault();
+      const text=q.value.trim();
+      if(!text)return;
+      q.value='';
+      bubble('you',text);
+      const wait=document.createElement('div');
+      wait.className='text-xs text-white/60';
+      wait.textContent='Thinking…';
+      chat.appendChild(wait);
+
+      try{
+        const r=await fetch('/chat',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({user:text})
+        });
+        const data=await r.json();
+        wait.remove();
+        bubble('bot',data.reply||'Hmm, server had no reply.');
+      }catch(e){
+        wait.remove();
+        bubble('bot','Server error. Is node server running?');
+      }
+    };
+  </script>
+</body>
+</html>
